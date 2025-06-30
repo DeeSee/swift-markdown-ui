@@ -49,7 +49,7 @@ private struct TextInlineRenderer {
     self.attributes = attributes
   }
 
-  mutating func render<S: Sequence>(_ inlines: S) where S.Element == InlineNode {
+  mutating func render(_ inlines: some Sequence<InlineNode>) {
     for inline in inlines {
       self.render(inline)
     }
@@ -57,22 +57,22 @@ private struct TextInlineRenderer {
 
   private mutating func render(_ inline: InlineNode) {
     switch inline {
-    case .text(let content):
-      self.renderText(content)
+    case .text(let content, let opacity):
+      self.renderText(content, opacityRegions: opacity)
     case .softBreak:
       self.renderSoftBreak()
-    case .html(let content):
+    case .html(let content, _):
       self.renderHTML(content)
     case .image(let source, _):
-      self.renderImage(source)
-    case .custom(let value):
-      self.result = self.result + (self.customInlines[value.id] ?? value.renderSync())
+      self.renderImage(source, opacity: 1)
+    case .custom(let value, let opacity):
+      self.result = self.result + (self.customInlines[value.id] ?? value.renderSync()).foregroundColor(Color.primary.opacity(opacity))
     default:
       self.defaultRender(inline)
     }
   }
 
-  private mutating func renderText(_ text: String) {
+  private mutating func renderText(_ text: String, opacityRegions: [Range<Int>: CGFloat]) {
     var text = text
 
     if self.shouldSkipNextWhitespace {
@@ -80,7 +80,7 @@ private struct TextInlineRenderer {
       text = text.replacingOccurrences(of: "^\\s+", with: "", options: .regularExpression)
     }
 
-    self.defaultRender(.text(text))
+    self.defaultRender(.text(text, opacityRegions: opacityRegions))
   }
 
   private mutating func renderSoftBreak() {
@@ -107,22 +107,24 @@ private struct TextInlineRenderer {
     }
   }
 
-  private mutating func renderImage(_ source: String) {
+  private mutating func renderImage(_ source: String, opacity: CGFloat) {
     if let image = self.images[source] {
-      self.result = self.result + Text(image)
+      self.result = self.result + Text(image).foregroundColor(Color.primary.opacity(opacity))
     }
   }
 
-  private mutating func defaultRender(_ inline: InlineNode) {
-    self.result =
-      self.result
-      + Text(
-        inline.renderAttributedString(
-          baseURL: self.baseURL,
-          textStyles: self.textStyles,
-          softBreakMode: self.softBreakMode,
-          attributes: self.attributes
-        )
+  private func makeText(_ inline: InlineNode) -> Text {
+    Text(
+      inline.renderAttributedString(
+        baseURL: self.baseURL,
+        textStyles: self.textStyles,
+        softBreakMode: self.softBreakMode,
+        attributes: self.attributes
       )
+    )
+  }
+
+  private mutating func defaultRender(_ inline: InlineNode) {
+    self.result = self.result + makeText(inline)
   }
 }

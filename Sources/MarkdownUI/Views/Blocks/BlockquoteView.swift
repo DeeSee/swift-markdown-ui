@@ -3,9 +3,9 @@ import SwiftUI
 struct BlockquoteView: View {
   @Environment(\.theme.blockquote) private var blockquote
 
-  private let children: [BlockNode]
+  private let children: [MarkdownContent.IdentifiedBlockNode]
 
-  init(children: [BlockNode]) {
+  init(children: [MarkdownContent.IdentifiedBlockNode]) {
     self.children = children
   }
 

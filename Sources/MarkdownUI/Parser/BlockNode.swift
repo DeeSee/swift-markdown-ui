@@ -1,12 +1,12 @@
 import Foundation
 
 enum BlockNode: Hashable {
-  case blockquote(children: [BlockNode])
+  case blockquote(children: [MarkdownContent.IdentifiedBlockNode])
   case bulletedList(isTight: Bool, items: [RawListItem])
   case numberedList(isTight: Bool, start: Int, items: [RawListItem])
   case taskList(isTight: Bool, items: [RawTaskListItem])
-  case codeBlock(fenceInfo: String?, content: String)
-  case htmlBlock(content: String)
+  case codeBlock(fenceInfo: String?, content: String)  // TODO: opacity
+  case htmlBlock(content: String) // TODO: opacity
   case paragraph(content: [InlineNode])
   case heading(level: Int, content: [InlineNode])
   case table(columnAlignments: [RawTableColumnAlignment], rows: [RawTableRow])
@@ -14,7 +14,7 @@ enum BlockNode: Hashable {
 }
 
 extension BlockNode {
-  var children: [BlockNode] {
+  var children: [MarkdownContent.IdentifiedBlockNode] {
     switch self {
     case .blockquote(let children):
       return children
@@ -36,12 +36,12 @@ extension BlockNode {
 }
 
 struct RawListItem: Hashable {
-  let children: [BlockNode]
+  let children: [MarkdownContent.IdentifiedBlockNode]
 }
 
 struct RawTaskListItem: Hashable {
   let isCompleted: Bool
-  let children: [BlockNode]
+  let children: [MarkdownContent.IdentifiedBlockNode]
 }
 
 enum RawTableColumnAlignment: Character {

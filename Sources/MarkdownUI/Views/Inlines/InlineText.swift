@@ -40,7 +40,7 @@ struct InlineText: View {
         }
         $0.addTask { @MainActor in
           let customNodes = self.inlines.compactMap {
-            if case let .custom(custom) = $0 { custom } else { nil }
+            if case let .custom(custom, _) = $0 { custom } else { nil }
           }
           for customNode in customNodes {
             if let renderAsync = customNode.renderAsync, customInlines[customNode.id] == nil {

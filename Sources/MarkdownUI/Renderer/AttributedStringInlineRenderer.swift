@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUICore
 
 extension InlineNode {
   func renderAttributedString(
@@ -14,7 +15,8 @@ extension InlineNode {
       attributes: attributes
     )
     renderer.render(self)
-    return renderer.result.resolvingFonts()
+    let result = renderer.result.resolvingFonts()
+    return result
   }
 }
 
@@ -41,16 +43,16 @@ private struct AttributedStringInlineRenderer {
 
   mutating func render(_ inline: InlineNode) {
     switch inline {
-    case .text(let content):
-      self.renderText(content)
+    case .text(let content, let opacityRegions):
+      self.renderText(content, opacityRegions: opacityRegions)
     case .softBreak:
       self.renderSoftBreak()
     case .lineBreak:
       self.renderLineBreak()
-    case .code(let content):
-      self.renderCode(content)
-    case .html(let content):
-      self.renderHTML(content)
+    case .code(let content, let opacityRegions):
+      self.renderCode(content, opacityRegions: opacityRegions)
+    case .html(let content, let opacityRegions):
+      self.renderHTML(content, opacityRegions: opacityRegions)
     case .emphasis(let children):
       self.renderEmphasis(children: children)
     case .strong(let children):
@@ -62,11 +64,11 @@ private struct AttributedStringInlineRenderer {
     case .image(let source, let children):
       self.renderImage(source: source, children: children)
     case .custom:
-      assertionFailure()
+      break
     }
   }
 
-  private mutating func renderText(_ text: String) {
+  private mutating func renderText(_ text: String, opacityRegions: [Range<Int>: CGFloat]) {
     var text = text
 
     if self.shouldSkipNextWhitespace {
@@ -74,7 +76,15 @@ private struct AttributedStringInlineRenderer {
       text = text.replacingOccurrences(of: "^\\s+", with: "", options: .regularExpression)
     }
 
-    self.result += .init(text, attributes: self.attributes)
+    var attributes = self.attributes
+    var result = AttributedString(text, attributes: attributes)
+    for (range, opacity) in opacityRegions {
+      let attributedStart = result.index(result.startIndex, offsetByCharacters: range.lowerBound)
+      let attributedEnd = result.index(result.startIndex, offsetByCharacters: range.upperBound)
+      result[attributedStart..<attributedEnd].foregroundColor = attributes.foregroundColor?.opacity(opacity) ?? Color.primary.opacity(opacity)
+    }
+
+    self.result += result
   }
 
   private mutating func renderSoftBreak() {
@@ -92,11 +102,18 @@ private struct AttributedStringInlineRenderer {
     self.result += .init("\n", attributes: self.attributes)
   }
 
-  private mutating func renderCode(_ code: String) {
-    self.result += .init(code, attributes: self.textStyles.code.mergingAttributes(self.attributes))
+  private mutating func renderCode(_ code: String, opacityRegions: [Range<Int>: CGFloat]) {
+    let attributes = self.textStyles.code.mergingAttributes(self.attributes)
+    var result = AttributedString(code, attributes: attributes)
+    for (range, opacity) in opacityRegions {
+      let attributedStart = result.index(result.startIndex, offsetByCharacters: range.lowerBound)
+      let attributedEnd = result.index(result.startIndex, offsetByCharacters: range.upperBound)
+      result[attributedStart..<attributedEnd].foregroundColor = attributes.foregroundColor?.opacity(opacity) ?? Color.primary.opacity(opacity)
+    }
+    self.result += result
   }
 
-  private mutating func renderHTML(_ html: String) {
+  private mutating func renderHTML(_ html: String, opacityRegions: [Range<Int>: CGFloat]) {
     let tag = HTMLTag(html)
 
     switch tag?.name.lowercased() {
@@ -104,7 +121,7 @@ private struct AttributedStringInlineRenderer {
       self.renderLineBreak()
       self.shouldSkipNextWhitespace = true
     default:
-      self.renderText(html)
+      self.renderText(html, opacityRegions: opacityRegions)
     }
   }
 

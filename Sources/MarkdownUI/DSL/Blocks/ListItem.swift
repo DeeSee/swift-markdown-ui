@@ -24,17 +24,17 @@ import Foundation
 ///
 /// ![](ListItem)
 public struct ListItem: Hashable {
-  let children: [BlockNode]
+  let children: [MarkdownContent.IdentifiedBlockNode]
 
-  init(children: [BlockNode]) {
+  init(children: [MarkdownContent.IdentifiedBlockNode]) {
     self.children = children
   }
 
   init(_ text: String) {
-    self.init(children: [.paragraph(content: [.text(text)])])
+    self.init(children: [.init(id: nil, value: .paragraph(content: [.text(text)]))])
   }
 
   public init(@MarkdownContentBuilder content: () -> MarkdownContent) {
-    self.init(children: content().blocks)
+    self.init(children: content().identifiedBlocks)
   }
 }

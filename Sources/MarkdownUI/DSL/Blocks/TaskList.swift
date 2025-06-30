@@ -71,7 +71,7 @@ public struct TaskList: MarkdownContentProtocol {
   init(tight: Bool, items: [TaskListItem]) {
     // Force loose spacing if any of the items contains more than one paragraph
     let hasItemsWithMultipleParagraphs = items.contains { item in
-      item.children.filter(\.isParagraph).count > 1
+      item.children.filter(\.value.isParagraph).count > 1
     }
 
     self.tight = hasItemsWithMultipleParagraphs ? false : tight

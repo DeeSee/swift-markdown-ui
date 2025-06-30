@@ -14,7 +14,7 @@ struct TaskListItemView: View {
     self.listItem.makeBody(
       configuration: .init(
         label: .init(self.label),
-        content: .init(blocks: item.children)
+        content: .init(identifiedBlocks: item.children)
       )
     )
   }

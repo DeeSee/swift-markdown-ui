@@ -72,7 +72,7 @@ public struct BulletedList: MarkdownContentProtocol {
   init(tight: Bool, items: [ListItem]) {
     // Force loose spacing if any of the items contains more than one paragraph
     let hasItemsWithMultipleParagraphs = items.contains { item in
-      item.children.filter(\.isParagraph).count > 1
+      item.children.filter(\.value.isParagraph).count > 1
     }
 
     self.tight = hasItemsWithMultipleParagraphs ? false : tight

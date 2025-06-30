@@ -36,7 +36,7 @@ extension BlockNode {
     switch unsafeNode.nodeType {
     case .blockquote:
       self = .blockquote(children: unsafeNode.children.compactMap {
-        BlockNode(unsafeNode: $0, extensions: extensions)
+        BlockNode(unsafeNode: $0, extensions: extensions)?.nonIdentified
       })
     case .list:
       if unsafeNode.children.contains(where: \.isTaskListItem) {
@@ -104,7 +104,7 @@ extension RawListItem {
       fatalError("Expected a list item but got a '\(unsafeNode.nodeType)' instead.")
     }
     self.init(children: unsafeNode.children.compactMap {
-      BlockNode(unsafeNode: $0, extensions: extensions)
+      BlockNode(unsafeNode: $0, extensions: extensions)?.nonIdentified
     })
   }
 }
@@ -117,7 +117,7 @@ extension RawTaskListItem {
     self.init(
       isCompleted: unsafeNode.isTaskListItemChecked,
       children: unsafeNode.children.compactMap {
-        BlockNode(unsafeNode: $0, extensions: extensions)
+        BlockNode(unsafeNode: $0, extensions: extensions)?.nonIdentified
       }
     )
   }
@@ -324,7 +324,7 @@ extension UnsafeNode {
     switch block {
     case .blockquote(let children):
       guard let node = cmark_node_new(CMARK_NODE_BLOCK_QUOTE) else { return nil }
-      children.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
+      children.map(\.value).compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
       return node
     case .bulletedList(let isTight, let items):
       guard let node = cmark_node_new(CMARK_NODE_LIST) else { return nil }
@@ -387,7 +387,7 @@ extension UnsafeNode {
 
   fileprivate static func make(_ item: RawListItem) -> UnsafeNode? {
     guard let node = cmark_node_new(CMARK_NODE_ITEM) else { return nil }
-    item.children.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
+    item.children.map(\.value).compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
     return node
   }
 
@@ -398,7 +398,7 @@ extension UnsafeNode {
       return nil
     }
     cmark_gfm_extensions_set_tasklist_item_checked(node, item.isCompleted)
-    item.children.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
+    item.children.map(\.value).compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
     return node
   }
 
@@ -424,7 +424,7 @@ extension UnsafeNode {
 
   fileprivate static func make(_ inline: InlineNode) -> UnsafeNode? {
     switch inline {
-    case .text(let content):
+    case .text(let content, _):
       guard let node = cmark_node_new(CMARK_NODE_TEXT) else { return nil }
       cmark_node_set_literal(node, content)
       return node
@@ -432,11 +432,11 @@ extension UnsafeNode {
       return cmark_node_new(CMARK_NODE_SOFTBREAK)
     case .lineBreak:
       return cmark_node_new(CMARK_NODE_LINEBREAK)
-    case .code(let content):
+    case .code(let content, _):
       guard let node = cmark_node_new(CMARK_NODE_CODE) else { return nil }
       cmark_node_set_literal(node, content)
       return node
-    case .html(let content):
+    case .html(let content, _):
       guard let node = cmark_node_new(CMARK_NODE_HTML_INLINE) else { return nil }
       cmark_node_set_literal(node, content)
       return node

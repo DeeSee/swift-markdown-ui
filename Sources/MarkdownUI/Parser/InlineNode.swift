@@ -1,17 +1,25 @@
 import Foundation
 
 enum InlineNode: Hashable, Sendable {
-  case text(String)
+  struct TextRun: Hashable, Sendable {
+    var text: String
+    var opacity: CGFloat
+  }
+
+  case text(String, opacityRegions: [Range<Int>: CGFloat] = [:])
   case softBreak
   case lineBreak
-  case code(String)
-  case html(String)
+  case code(String, opacityRegions: [Range<Int>: CGFloat] = [:])
+  case html(String, opacityRegions: [Range<Int>: CGFloat] = [:])
   case emphasis(children: [InlineNode])
   case strong(children: [InlineNode])
   case strikethrough(children: [InlineNode])
   case link(destination: String, children: [InlineNode])
   case image(source: String, children: [InlineNode])
-  case custom(CustomInline)
+  case custom(CustomInline, opacity: CGFloat = 1)
+
+//  static func code(_ value: String) -> Self { .code([TextRun(text: value, opacity: 1)]) }
+//  static func html(_ value: String) -> Self { .html([TextRun(text: value, opacity: 1)]) }
 }
 
 extension InlineNode {

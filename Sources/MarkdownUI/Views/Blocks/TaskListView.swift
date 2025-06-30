@@ -22,7 +22,7 @@ struct TaskListView: View {
   }
 
   private var label: some View {
-    BlockSequence(self.items) { _, item in
+    BlockSequence(self.items, id: { $0.children.map(\.optimizedID) }) { _, item in
       TaskListItemView(item: item)
     }
     .labelStyle(.titleAndIcon)

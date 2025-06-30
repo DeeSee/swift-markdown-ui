@@ -19,7 +19,7 @@ struct ListItemSequence: View {
   }
 
   var body: some View {
-    BlockSequence(self.items) { index, item in
+    BlockSequence(self.items, id: { $0.children.map(\.optimizedID) }) { index, item in
       ListItemView(
         item: item,
         number: self.start + index,
