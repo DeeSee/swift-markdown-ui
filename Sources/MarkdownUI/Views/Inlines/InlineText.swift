@@ -6,8 +6,10 @@ struct InlineText: View {
   @Environment(\.imageBaseURL) private var imageBaseURL
   @Environment(\.softBreakMode) private var softBreakMode
   @Environment(\.theme) private var theme
+  @Environment(\.favicons) private var favicons
 
   @State private var inlineImages: [String: Image] = [:]
+  @State private var faviconImages: [String: Text] = [:]
   @State private var customInlines: [String: Text] = [:]
 
   private let inlines: [InlineNode]
@@ -30,7 +32,9 @@ struct InlineText: View {
         images: inlineImages,
         customInlines: customInlines,
         softBreakMode: self.softBreakMode,
-        attributes: attributes
+        attributes: attributes,
+        favicons: favicons,
+        fetchedFavicons: faviconImages,
       )
     }
     .task(id: self.inlines) { @MainActor in
@@ -47,6 +51,20 @@ struct InlineText: View {
               let result = await renderAsync()
               try Task.checkCancellation()
               customInlines[customNode.id] = result
+            }
+          }
+        }
+        $0.addTask { @MainActor in
+          guard let favicons = self.favicons else { return }
+          let faviconsSources = Set(self.inlines.compactMap(\.faviconSource).filter {
+            !self.faviconImages.keys.contains($0)
+          })
+          guard !faviconsSources.isEmpty else { return }
+
+          for faviconSource in faviconsSources {
+            let result = await favicons.fetch(faviconSource)
+            if let result {
+              self.faviconImages[faviconSource] = result
             }
           }
         }
@@ -82,5 +100,14 @@ struct InlineText: View {
 
       return result
     }
+  }
+}
+
+extension InlineNode {
+  fileprivate var faviconSource: String? {
+    if case let .link(destination, _) = self {
+      return destination
+    }
+    return nil
   }
 }

@@ -7,7 +7,9 @@ extension Sequence where Element == InlineNode {
     images: [String: Image],
     customInlines: [String: Text],
     softBreakMode: SoftBreak.Mode,
-    attributes: AttributeContainer
+    attributes: AttributeContainer,
+    favicons: Favicons?,
+    fetchedFavicons: [String: Text],
   ) -> Text {
     var renderer = TextInlineRenderer(
       baseURL: baseURL,
@@ -15,7 +17,9 @@ extension Sequence where Element == InlineNode {
       images: images,
       customInlines: customInlines,
       softBreakMode: softBreakMode,
-      attributes: attributes
+      attributes: attributes,
+      favicons: favicons,
+      fetchedFavicons: fetchedFavicons,
     )
     renderer.render(self)
     return renderer.result
@@ -31,6 +35,8 @@ private struct TextInlineRenderer {
   private let customInlines: [String: Text]
   private let softBreakMode: SoftBreak.Mode
   private let attributes: AttributeContainer
+  private let favicons: Favicons?
+  private let fetchedFavicons: [String: Text]
   private var shouldSkipNextWhitespace = false
 
   init(
@@ -39,7 +45,9 @@ private struct TextInlineRenderer {
     images: [String: Image],
     customInlines: [String: Text],
     softBreakMode: SoftBreak.Mode,
-    attributes: AttributeContainer
+    attributes: AttributeContainer,
+    favicons: Favicons?,
+    fetchedFavicons: [String: Text],
   ) {
     self.baseURL = baseURL
     self.textStyles = textStyles
@@ -47,6 +55,8 @@ private struct TextInlineRenderer {
     self.customInlines = customInlines
     self.softBreakMode = softBreakMode
     self.attributes = attributes
+    self.favicons = favicons
+    self.fetchedFavicons = fetchedFavicons
   }
 
   mutating func render(_ inlines: some Sequence<InlineNode>) {
@@ -65,8 +75,16 @@ private struct TextInlineRenderer {
       self.renderHTML(content)
     case .image(let source, _):
       self.renderImage(source, opacity: 1)
+    case .link(let source, let label):
+      if label.allSatisfy(\.allowFavicon),
+         let favicon = self.fetchedFavicons[source]
+          ?? self.favicons?.cached(source)
+          ?? self.favicons?.placeholder {
+        self.result = self.result + favicon + Text("\u{00A0}")
+      }
+      self.defaultRender(inline)
     case .custom(let value, let opacity):
-      self.result = self.result + (self.customInlines[value.id] ?? value.renderSync()).foregroundColor(Color.primary.opacity(opacity))
+      self.result = self.result + (self.customInlines[value.id] ?? value.renderSync()).foregroundColor(.primary.opacity(opacity))
     default:
       self.defaultRender(inline)
     }
@@ -126,5 +144,21 @@ private struct TextInlineRenderer {
 
   private mutating func defaultRender(_ inline: InlineNode) {
     self.result = self.result + makeText(inline)
+  }
+}
+
+extension InlineNode {
+  fileprivate var allowFavicon: Bool {
+    switch self {
+    case .text, .softBreak, .lineBreak: true
+    case .code, .html: false
+    case .emphasis(children: let children),
+        .strong(children: let children),
+        .strikethrough(children: let children),
+        .link(destination: _, children: let children):
+      children.allSatisfy(\.allowFavicon)
+    case .image, .custom:
+      false
+    }
   }
 }

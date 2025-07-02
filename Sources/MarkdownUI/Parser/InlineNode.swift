@@ -17,9 +17,6 @@ enum InlineNode: Hashable, Sendable {
   case link(destination: String, children: [InlineNode])
   case image(source: String, children: [InlineNode])
   case custom(CustomInline, opacity: CGFloat = 1)
-
-//  static func code(_ value: String) -> Self { .code([TextRun(text: value, opacity: 1)]) }
-//  static func html(_ value: String) -> Self { .html([TextRun(text: value, opacity: 1)]) }
 }
 
 extension InlineNode {
