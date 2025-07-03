@@ -103,7 +103,10 @@ private struct AttributedStringInlineRenderer {
   }
 
   private mutating func renderCode(_ code: String, opacityRegions: [Range<Int>: CGFloat]) {
-    let attributes = self.textStyles.code.mergingAttributes(self.attributes)
+    var attributes = self.textStyles.code.mergingAttributes(self.attributes)
+    if self.attributes.backgroundColor != nil {
+      attributes.backgroundColor = self.attributes.backgroundColor
+    }
     var result = AttributedString(code, attributes: attributes)
     for (range, opacity) in opacityRegions {
       let attributedStart = result.index(result.startIndex, offsetByCharacters: range.lowerBound)

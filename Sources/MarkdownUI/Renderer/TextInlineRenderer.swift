@@ -76,7 +76,7 @@ private struct TextInlineRenderer {
     case .image(let source, _):
       self.renderImage(source, opacity: 1)
     case .link(let source, let label):
-      if label.allSatisfy(\.allowFavicon),
+      if label.first?.allowFavicon ?? true,
          let favicon = self.fetchedFavicons[source]
           ?? self.favicons?.cached(source)
           ?? self.favicons?.placeholder {
@@ -150,13 +150,12 @@ private struct TextInlineRenderer {
 extension InlineNode {
   fileprivate var allowFavicon: Bool {
     switch self {
-    case .text, .softBreak, .lineBreak: true
-    case .code, .html: false
+    case .text, .softBreak, .lineBreak, .code, .html: true
     case .emphasis(children: let children),
         .strong(children: let children),
         .strikethrough(children: let children),
         .link(destination: _, children: let children):
-      children.allSatisfy(\.allowFavicon)
+      children.first?.allowFavicon ?? true
     case .image, .custom:
       false
     }
